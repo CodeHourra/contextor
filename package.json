@@ -10,11 +10,7 @@
     "node": ">=20"
   },
   "pnpm": {
-    "onlyBuiltDependencies": [
-      "@biomejs/biome",
-      "better-sqlite3",
-      "esbuild"
-    ]
+    "onlyBuiltDependencies": ["@biomejs/biome", "better-sqlite3", "esbuild"]
   },
   "scripts": {
     "build": "tsup",
