@@ -2,6 +2,13 @@
   "name": "contextor",
   "version": "0.1.0",
   "description": "Project-level developer context sync tool (SQLite-backed)",
+  "license": "MIT",
+  "author": "stevelliu",
+  "keywords": ["dotfiles", "context", "sync", "developer", "cli", "sqlite"],
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
   "type": "module",
   "files": ["dist", "README.md", "LICENSE"],
   "bin": {
