@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Project-level developer context sync tool (SQLite-backed)",
   "type": "module",
+  "files": ["dist", "README.md", "LICENSE"],
   "bin": {
     "contextor": "./dist/cli.js"
   },
@@ -20,7 +21,8 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "typecheck": "tsc --noEmit",
-    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "prepublishOnly": "pnpm ci"
   },
   "dependencies": {
     "@inquirer/prompts": "^7.0.0",
