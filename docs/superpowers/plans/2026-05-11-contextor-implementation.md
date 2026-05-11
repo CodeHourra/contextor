@@ -171,9 +171,18 @@ strict-peer-dependencies=false
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@biomejs/biome",
+      "better-sqlite3",
+      "esbuild"
+    ]
   }
 }
 ```
+
+> 说明：pnpm 9+ 默认收紧 lifecycle scripts，`better-sqlite3`（原生 prebuild-install）/ `esbuild` / `@biomejs/biome` 必须在 allowlist 中显式放行，否则原生模块不可加载，Task 1.1 起会失败。
 
 - [ ] **Step 4：安装依赖**
 
