@@ -5,10 +5,6 @@
   "license": "MIT",
   "author": "stevelliu",
   "keywords": ["dotfiles", "context", "sync", "developer", "cli", "sqlite"],
-  "repository": {
-    "type": "git",
-    "url": ""
-  },
   "type": "module",
   "files": ["dist", "README.md", "LICENSE"],
   "bin": {
@@ -38,7 +34,6 @@
     "diff": "^7.0.0",
     "ink": "^5.0.1",
     "ink-select-input": "^6.0.0",
-    "ink-spinner": "^5.0.0",
     "ink-text-input": "^6.0.0",
     "picocolors": "^1.1.0",
     "picomatch": "^4.0.2",

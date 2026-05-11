@@ -447,10 +447,10 @@ program
   });
 
 program.action(async function (this: Command) {
-  const g = this.optsWithGlobals() as { tui?: boolean };
+  const g = this.optsWithGlobals() as { tui?: boolean; db?: string; cwd?: string };
   if (g.tui || process.stdin.isTTY) {
     const { runTui } = await import('./tui/App.js');
-    await runTui();
+    await runTui({ db: g.db, cwd: g.cwd });
     return;
   }
   program.outputHelp();
