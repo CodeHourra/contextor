@@ -6,5 +6,6 @@ coverage/
 .vscode/
 .idea/
 .env
-.env.*
+.env.local
+.env.*.local
 
