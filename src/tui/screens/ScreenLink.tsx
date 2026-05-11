@@ -6,7 +6,7 @@ import { Footer } from '../components/Footer.js';
 import { useTui } from '../context.js';
 
 export function ScreenLink() {
-  const { db, cwd, setScreen } = useTui();
+  const { db, cwd, setScreen, refreshProject } = useTui();
   const [val, setVal] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
   useInput((_, k) => k.escape && setScreen('main'));
@@ -20,6 +20,7 @@ export function ScreenLink() {
         onSubmit={async (alias) => {
           try {
             const p = await link(db, alias.trim(), cwd);
+            refreshProject();
             setMsg(`Linked cwd to ${p.alias}.`);
           } catch (e) {
             setMsg(`Error: ${(e as Error).message}`);

@@ -1,4 +1,5 @@
-import { type ReactNode, createContext, useContext, useMemo, useState } from 'react';
+import { type ReactNode, createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { lookupProjectByCwd } from '../commands/save.js';
 import type { ProjectRow } from '../commands/types.js';
 import type { Db } from '../db/index.js';
 import type { ScreenName } from './types.js';
@@ -9,6 +10,8 @@ export type TuiContext = {
   currentProject: ProjectRow | null;
   screen: ScreenName;
   setScreen: (s: ScreenName) => void;
+  /** Re-query DB after init/link so MainMenu shows project-bound commands. */
+  refreshProject: () => void;
 };
 
 const Ctx = createContext<TuiContext | null>(null);
@@ -25,15 +28,22 @@ export function TuiProvider({
   initialProject: ProjectRow | null;
 }) {
   const [screen, setScreen] = useState<ScreenName>('main');
+  const [currentProject, setCurrentProject] = useState<ProjectRow | null>(initialProject);
+  const refreshProject = useCallback(() => {
+    const p = lookupProjectByCwd(db, cwd);
+    setCurrentProject(p === 'unknown' || !p ? null : p);
+  }, [db, cwd]);
+
   const value = useMemo(
     (): TuiContext => ({
       db,
       cwd,
-      currentProject: initialProject,
+      currentProject,
       screen,
       setScreen,
+      refreshProject,
     }),
-    [db, cwd, initialProject, screen],
+    [db, cwd, currentProject, screen, refreshProject],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

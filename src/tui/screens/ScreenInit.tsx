@@ -13,7 +13,7 @@ import {
 type End = { ok: true; text: string } | { ok: false; text: string };
 
 export function ScreenInit() {
-  const { db, cwd, setScreen } = useTui();
+  const { db, cwd, setScreen, refreshProject } = useTui();
   const [rs, setRs] = useState<TuiReporterState>(createInitialReporterState);
   const reporter = useMemo(() => tuiReporter(setRs), []);
   const [end, setEnd] = useState<End | null>(null);
@@ -31,6 +31,7 @@ export function ScreenInit() {
     init(db, { cwd, noScan: false, yes: true }, reporter)
       .then((r) => {
         if (cancelled) return;
+        refreshProject();
         const text = r.linked
           ? `Linked to ${r.project.alias}`
           : `Created ${r.project.alias}, saved ${r.saved} files.`;
@@ -42,7 +43,7 @@ export function ScreenInit() {
     return () => {
       cancelled = true;
     };
-  }, [db, cwd, reporter]);
+  }, [db, cwd, reporter, refreshProject]);
 
   return (
     <Box flexDirection="column">
