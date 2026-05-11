@@ -1,6 +1,14 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  utimesSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { doctor } from '../../src/commands/doctor.js';
 import { gc, vacuum } from '../../src/commands/gc.js';
@@ -87,6 +95,36 @@ describe('rules / trash / doctor / gc', () => {
       );
       expect(restored).toContain('note.txt');
       expect(readFileSync(join(proj, 'note.txt'), 'utf8')).toBe('from-backup');
+    } finally {
+      rmSync(proj, { recursive: true, force: true });
+      rmSync(trashRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('restoreFromTrash rejects manifest path ../evil.txt escaping backupRoot', async () => {
+    const proj = mkdtempSync(join(tmpdir(), 'ctx-misc-proj-trash-escape-'));
+    const trashRoot = mkdtempSync(join(tmpdir(), 'ctx-misc-trash-escape-'));
+    try {
+      const backupRoot = join(trashRoot, 'esc-alias', 'esc-ts');
+      mkdirSync(backupRoot, { recursive: true });
+      writeFileSync(join(trashRoot, 'esc-alias', 'evil.txt'), 'would-be-exfil', 'utf8');
+      writeFileSync(
+        join(backupRoot, 'manifest.json'),
+        JSON.stringify({
+          project_alias: 'esc-alias',
+          utc_timestamp: new Date().toISOString(),
+          files: [{ path: '../evil.txt' }],
+        }),
+        'utf8',
+      );
+      const outsideProject = join(dirname(proj), 'evil.txt');
+      rmSync(outsideProject, { force: true });
+
+      await expect(
+        restoreFromTrash(trashRoot, 'esc-alias/esc-ts', proj, { yes: true }, mockReporter()),
+      ).rejects.toThrow(/escapes/);
+
+      expect(existsSync(outsideProject)).toBe(false);
     } finally {
       rmSync(proj, { recursive: true, force: true });
       rmSync(trashRoot, { recursive: true, force: true });

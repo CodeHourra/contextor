@@ -83,7 +83,7 @@ export async function restoreFromTrash(
   const backupRoot = join(trashRoot, alias, ts);
   const restored: string[] = [];
   for (const rel of manifest.files.map((f) => f.path)) {
-    const srcAbs = join(backupRoot, rel);
+    const srcAbs = safeJoin(backupRoot, rel);
     const dstAbs = safeJoin(projectRoot, rel);
     if (!existsSync(srcAbs)) continue;
     if (existsSync(dstAbs) && !opts.yes) {
