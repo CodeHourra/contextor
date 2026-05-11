@@ -446,10 +446,11 @@ program
     console.log(`contextor ${VERSION}`);
   });
 
-program.action(function (this: Command) {
+program.action(async function (this: Command) {
   const g = this.optsWithGlobals() as { tui?: boolean };
   if (g.tui || process.stdin.isTTY) {
-    console.log('TUI not implemented yet. (Task 5.3)');
+    const { runTui } = await import('./tui/App.js');
+    await runTui();
     return;
   }
   program.outputHelp();
