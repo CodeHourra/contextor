@@ -1,17 +1,23 @@
 import { Box, Text, useInput } from 'ink';
 import SelectInput from 'ink-select-input';
 import TextInput from 'ink-text-input';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { add } from '../../commands/add.js';
 import { detectProjectRoot } from '../../core/project.js';
 import { Footer } from '../components/Footer.js';
 import { useTui } from '../context.js';
-import { listProjectDir, parentRel } from '../treeBrowse.js';
+import { type FlatNode, flattenTree } from '../treeBrowse.js';
 
 type Phase = 'home' | 'browse' | 'manual' | 'review' | 'done';
 
+const VIEWPORT = 18;
+
 function uniqSorted(paths: string[]): string[] {
   return [...new Set(paths)].sort((a, b) => a.localeCompare(b));
+}
+
+function manifestKey(node: { rel: string; isDir: boolean }): string {
+  return node.isDir ? `${node.rel}/` : node.rel;
 }
 
 export function ScreenAdd() {
@@ -19,22 +25,104 @@ export function ScreenAdd() {
   const projectRoot = useMemo(() => detectProjectRoot(cwd).root, [cwd]);
 
   const [phase, setPhase] = useState<Phase>('home');
-  const [browseRel, setBrowseRel] = useState('');
-  const [selected, setSelected] = useState<string[]>([]);
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
+  const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set());
+  const [cursor, setCursor] = useState(0);
   const [reviewFrom, setReviewFrom] = useState<'browse' | 'manual'>('browse');
   const [manualVal, setManualVal] = useState('');
   const [pendingPaths, setPendingPaths] = useState<string[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
   const [reviewError, setReviewError] = useState<string | null>(null);
 
-  useInput((_, k) => {
-    if (!k.escape) return;
-    if (phase === 'home') setScreen('main');
-    else if (phase === 'browse') setPhase('home');
-    else if (phase === 'manual') setPhase('home');
-    else if (phase === 'review') setPhase(reviewFrom === 'browse' ? 'browse' : 'manual');
-    else if (phase === 'done') setScreen('main');
-  });
+  const nodes = useMemo<FlatNode[]>(
+    () => (phase === 'browse' ? flattenTree(projectRoot, expanded) : []),
+    [phase, projectRoot, expanded],
+  );
+
+  useEffect(() => {
+    if (phase !== 'browse') return;
+    if (cursor > nodes.length - 1) setCursor(Math.max(0, nodes.length - 1));
+  }, [phase, nodes.length, cursor]);
+
+  useInput(
+    (input, key) => {
+      if (key.escape) {
+        if (phase === 'home') setScreen('main');
+        else if (phase === 'browse' || phase === 'manual') setPhase('home');
+        else if (phase === 'review') setPhase(reviewFrom === 'browse' ? 'browse' : 'manual');
+        else if (phase === 'done') setScreen('main');
+        return;
+      }
+      if (phase !== 'browse' || nodes.length === 0) return;
+      const cur = nodes[cursor];
+      if (!cur) return;
+
+      if (key.upArrow) {
+        setCursor((c) => Math.max(0, c - 1));
+        return;
+      }
+      if (key.downArrow) {
+        setCursor((c) => Math.min(nodes.length - 1, c + 1));
+        return;
+      }
+      if (key.leftArrow) {
+        if (cur.isDir && expanded.has(cur.rel)) {
+          const next = new Set(expanded);
+          next.delete(cur.rel);
+          setExpanded(next);
+        } else if (cur.parent) {
+          const idx = nodes.findIndex((n) => n.rel === cur.parent);
+          if (idx >= 0) setCursor(idx);
+        }
+        return;
+      }
+      if (key.rightArrow) {
+        if (cur.isDir && !expanded.has(cur.rel)) {
+          const next = new Set(expanded);
+          next.add(cur.rel);
+          setExpanded(next);
+        }
+        return;
+      }
+      if (key.return) {
+        if (cur.isDir) {
+          const next = new Set(expanded);
+          if (next.has(cur.rel)) next.delete(cur.rel);
+          else next.add(cur.rel);
+          setExpanded(next);
+        } else {
+          toggleSelect(cur);
+        }
+        return;
+      }
+      if (input === ' ') {
+        toggleSelect(cur);
+        return;
+      }
+      if (input === 'c') {
+        const arr = uniqSorted([...selected]);
+        if (arr.length === 0) {
+          setMsg('Nothing selected. Use space / enter on a file or directory first.');
+          return;
+        }
+        setMsg(null);
+        setPendingPaths(arr);
+        setReviewFrom('browse');
+        setPhase('review');
+      }
+    },
+    { isActive: true },
+  );
+
+  function toggleSelect(n: { rel: string; isDir: boolean }): void {
+    const key = manifestKey(n);
+    setSelected((s) => {
+      const next = new Set(s);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   if (!currentProject) {
     return (
@@ -67,7 +155,7 @@ export function ScreenAdd() {
           ]}
           onSelect={(item) => {
             if (item.value === 'browse') {
-              setBrowseRel('');
+              setCursor(0);
               setPhase('browse');
             } else setPhase('manual');
           }}
@@ -141,91 +229,51 @@ export function ScreenAdd() {
     );
   }
 
-  // browse
-  let entries: ReturnType<typeof listProjectDir>;
-  try {
-    entries = listProjectDir(projectRoot, browseRel);
-  } catch {
+  // browse: VSCode-like file tree
+  if (nodes.length === 0) {
     return (
       <Box flexDirection="column">
-        <Text color="red">Cannot read directory.</Text>
-        <Footer hint="esc" />
+        <Text bold>browse</Text>
+        <Text color="yellow">Project root is empty (or unreadable).</Text>
+        <Footer hint="esc → mode menu" />
       </Box>
     );
   }
 
-  const items: Array<{ label: string; value: string }> = [];
-  if (browseRel) {
-    items.push({ label: '.. (parent directory)', value: '__UP__' });
-  }
-  for (const e of entries) {
-    if (e.isDir) {
-      items.push({ label: `[dir] ${e.name}/  → enter`, value: `__ENTER__:${e.rel}` });
-      items.push({
-        label: `[dir] ${e.name}/  → add whole folder to selection`,
-        value: `__ADD_DIR__:${e.rel}`,
-      });
-    } else {
-      items.push({
-        label: `[file] ${e.name}  → toggle in selection`,
-        value: `__TOGGLE__:${e.rel}`,
-      });
-    }
-  }
-  items.push({ label: '── Finish selection → confirm', value: '__DONE__' });
-
-  const selectedPreview =
-    selected.length === 0
-      ? '(none)'
-      : selected.length <= 4
-        ? selected.join(', ')
-        : `${selected.slice(0, 3).join(', ')} … +${selected.length - 3}`;
+  const start = Math.max(0, Math.min(nodes.length - VIEWPORT, cursor - Math.floor(VIEWPORT / 2)));
+  const end = Math.min(nodes.length, start + VIEWPORT);
+  const window = nodes.slice(start, end);
+  const selectedCount = selected.size;
 
   return (
     <Box flexDirection="column">
-      <Text bold>browse manifest paths</Text>
+      <Text bold>browse — file tree</Text>
       <Text dimColor>
-        Current: {browseRel || '.'} · selected {selected.length}: {selectedPreview}
+        {projectRoot} · {selectedCount} selected · {cursor + 1}/{nodes.length}
       </Text>
-      <SelectInput
-        items={items}
-        onSelect={(item) => {
-          const v = item.value;
-          if (v === '__UP__') {
-            setBrowseRel(parentRel(browseRel));
-            return;
-          }
-          if (v.startsWith('__ENTER__:')) {
-            setBrowseRel(v.slice('__ENTER__:'.length));
-            return;
-          }
-          if (v.startsWith('__ADD_DIR__:')) {
-            const rel = v.slice('__ADD_DIR__:'.length);
-            const manifestPath = rel.endsWith('/') ? rel : `${rel}/`;
-            setSelected((prev) => (prev.includes(manifestPath) ? prev : [...prev, manifestPath]));
-            return;
-          }
-          if (v.startsWith('__TOGGLE__:')) {
-            const rel = v.slice('__TOGGLE__:'.length);
-            setSelected((prev) =>
-              prev.includes(rel) ? prev.filter((p) => p !== rel) : [...prev, rel],
-            );
-            return;
-          }
-          if (v === '__DONE__') {
-            if (selected.length === 0) {
-              setMsg('Select at least one file or folder (use toggle / add whole folder).');
-              return;
-            }
-            setMsg(null);
-            setPendingPaths(uniqSorted(selected));
-            setReviewFrom('browse');
-            setPhase('review');
-          }
-        }}
-      />
+      <Box flexDirection="column" marginTop={1}>
+        {window.map((n, i) => {
+          const idx = start + i;
+          const focused = idx === cursor;
+          const indent = '  '.repeat(n.depth);
+          const chevron = n.isDir ? (expanded.has(n.rel) ? '▾' : '▸') : ' ';
+          const checked = selected.has(manifestKey(n));
+          const mark = checked ? '[x]' : '[ ]';
+          const tail = n.isDir ? '/' : '';
+          const line = `${focused ? '› ' : '  '}${indent}${chevron} ${mark} ${n.name}${tail}`;
+          const color = focused ? 'cyan' : checked ? 'green' : undefined;
+          return (
+            <Text key={n.rel} bold={focused} color={color} dimColor={!focused && n.isDir}>
+              {line}
+            </Text>
+          );
+        })}
+      </Box>
       {msg && <Text color="yellow">{msg}</Text>}
-      <Footer hint="esc → mode menu" />
+      <Box marginTop={1} flexDirection="column">
+        <Text dimColor>↑↓ move · → expand · ← collapse/parent · enter open/toggle</Text>
+        <Text dimColor>space toggle select · c continue · esc back</Text>
+      </Box>
     </Box>
   );
 }

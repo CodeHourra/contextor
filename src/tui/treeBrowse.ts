@@ -29,3 +29,35 @@ export function parentRel(rel: string): string {
   const i = rel.lastIndexOf('/');
   return i === -1 ? '' : rel.slice(0, i);
 }
+
+export type FlatNode = {
+  rel: string;
+  name: string;
+  isDir: boolean;
+  depth: number;
+  parent: string | null;
+};
+
+/** DFS-flatten the project tree according to `expanded` (set of dir rels). */
+export function flattenTree(
+  projectRoot: string,
+  expanded: ReadonlySet<string>,
+  startRel = '',
+  depth = 0,
+): FlatNode[] {
+  const out: FlatNode[] = [];
+  let entries: TreeEntry[];
+  try {
+    entries = listProjectDir(projectRoot, startRel);
+  } catch {
+    return out;
+  }
+  const parent = startRel || null;
+  for (const e of entries) {
+    out.push({ rel: e.rel, name: e.name, isDir: e.isDir, depth, parent });
+    if (e.isDir && expanded.has(e.rel)) {
+      out.push(...flattenTree(projectRoot, expanded, e.rel, depth + 1));
+    }
+  }
+  return out;
+}

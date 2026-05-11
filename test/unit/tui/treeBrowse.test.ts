@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { listProjectDir, parentRel } from '../../../src/tui/treeBrowse.js';
+import { flattenTree, listProjectDir, parentRel } from '../../../src/tui/treeBrowse.js';
 
 describe('treeBrowse', () => {
   let root: string;
@@ -33,5 +33,17 @@ describe('treeBrowse', () => {
     const list = listProjectDir(root, 'a');
     expect(list.some((e) => e.rel === 'a/b' && e.isDir)).toBe(true);
     expect(list.some((e) => e.rel === 'a/f.txt' && !e.isDir)).toBe(true);
+  });
+
+  it('flattenTree only descends into expanded dirs', () => {
+    const collapsed = flattenTree(root, new Set());
+    expect(collapsed.map((n) => n.rel).sort()).toEqual(['a']);
+    const expanded = flattenTree(root, new Set(['a']));
+    const rels = expanded.map((n) => n.rel);
+    expect(rels).toContain('a/b');
+    expect(rels).toContain('a/f.txt');
+    const child = expanded.find((n) => n.rel === 'a/b');
+    expect(child?.depth).toBe(1);
+    expect(child?.parent).toBe('a');
   });
 });
