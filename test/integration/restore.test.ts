@@ -9,7 +9,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { init } from '../../src/commands/init.js';
 import { restore } from '../../src/commands/restore.js';
@@ -168,6 +168,45 @@ describe('restore (integration)', () => {
     expect(r.created).toEqual([]);
     expect(readFileSync(join(proj, '.cursor', 'rules.md'), 'utf8')).toBe('rules-v0');
     expect(readFileSync(join(proj, '.env'), 'utf8')).toBe('BAD-ENV');
+    db.close();
+  });
+
+  it('rejects DB path ../evil.txt: throws escape error; does not write outside project', async () => {
+    gitInit(proj);
+    const db = openDb(dbPath);
+    const { project } = await init(
+      db,
+      { cwd: proj, alias: 'restore-evil', noScan: true, yes: true },
+      mockReporter(),
+    );
+    const ts = Date.now();
+    db.prepare(
+      `INSERT INTO manifest_entries (project_id, path, kind, created_at) VALUES (?, ?, 'include', ?)`,
+    ).run(project.id, '.env', ts);
+    await save(db, { cwd: proj, allowLarge: false, dryRun: false }, mockReporter());
+
+    const envRow = db
+      .prepare(
+        'SELECT blob_hash, mode, is_dir, saved_at FROM managed_files WHERE project_id = ? AND path = ?',
+      )
+      .get(project.id, '.env') as {
+      blob_hash: string;
+      mode: number;
+      is_dir: number;
+      saved_at: number;
+    };
+    db.prepare(
+      'INSERT INTO managed_files (project_id, path, blob_hash, mode, is_dir, saved_at) VALUES (?, ?, ?, ?, ?, ?)',
+    ).run(project.id, '../evil.txt', envRow.blob_hash, envRow.mode, envRow.is_dir, envRow.saved_at);
+
+    const evilAbs = join(dirname(proj), 'evil.txt');
+    expect(existsSync(evilAbs)).toBe(false);
+
+    await expect(
+      restore(db, { cwd: proj, yes: true, noBackup: true, dryRun: false }, mockReporter()),
+    ).rejects.toThrow(/escapes/);
+
+    expect(existsSync(evilAbs)).toBe(false);
     db.close();
   });
 

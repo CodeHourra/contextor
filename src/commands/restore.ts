@@ -1,9 +1,10 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import picomatch from 'picomatch';
 import { getBlob, hashBuffer } from '../core/blob.js';
 import { classifyConflicts } from '../core/conflict.js';
 import { expandManifest, listManifest } from '../core/manifest.js';
+import { safeJoin } from '../core/paths.js';
 import { detectProjectRoot } from '../core/project.js';
 import { backupToTrash } from '../core/trash.js';
 import type { Db } from '../db/index.js';
@@ -57,7 +58,7 @@ function resolveProject(db: Db, opts: RestoreOptions): ProjectRow {
 }
 
 function localHashForRow(root: string, row: ManagedRow): string | null {
-  const abs = join(root, row.path);
+  const abs = safeJoin(root, row.path);
   if (!existsSync(abs)) return null;
   if (row.is_dir) {
     try {
@@ -175,7 +176,7 @@ export async function restore(
   for (const rel of [...cls.created, ...cls.changed]) {
     const t = fileByRel.get(rel);
     if (!t) continue;
-    const abs = join(projectRoot, rel);
+    const abs = safeJoin(projectRoot, rel);
     if (t.is_dir) {
       mkdirSync(abs, { recursive: true });
       try {

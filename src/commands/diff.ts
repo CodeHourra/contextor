@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { createPatch } from 'diff';
 import { getBlob, hashBuffer } from '../core/blob.js';
+import { safeJoin } from '../core/paths.js';
 import { detectProjectRoot } from '../core/project.js';
 import type { Db } from '../db/index.js';
 import type { ProjectRow } from './types.js';
@@ -33,7 +34,7 @@ export function diff(db: Db, projectId: number, cwd: string, rel: string): strin
 
   let local: Buffer;
   try {
-    local = readFileSync(join(projectRoot, rel));
+    local = readFileSync(safeJoin(projectRoot, rel));
   } catch {
     return '(missing locally)';
   }

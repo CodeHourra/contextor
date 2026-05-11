@@ -8,6 +8,7 @@ import {
   statSync,
 } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { safeJoin } from '../core/paths.js';
 import type { Reporter } from './types.js';
 
 export type TrashListEntry = { id: string; alias: string; ts: string; files: string[] };
@@ -83,7 +84,7 @@ export async function restoreFromTrash(
   const restored: string[] = [];
   for (const rel of manifest.files.map((f) => f.path)) {
     const srcAbs = join(backupRoot, rel);
-    const dstAbs = join(projectRoot, rel);
+    const dstAbs = safeJoin(projectRoot, rel);
     if (!existsSync(srcAbs)) continue;
     if (existsSync(dstAbs) && !opts.yes) {
       const ok = await reporter.confirm(`"${rel}" exists locally. Overwrite?`);

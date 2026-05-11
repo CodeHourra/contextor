@@ -1,8 +1,9 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { hashBuffer } from '../core/blob.js';
 import { type Classification, classifyConflicts } from '../core/conflict.js';
 import { expandManifest, listManifest } from '../core/manifest.js';
+import { safeJoin } from '../core/paths.js';
 import { detectProjectRoot } from '../core/project.js';
 import type { Db } from '../db/index.js';
 import type { ProjectRow } from './types.js';
@@ -15,7 +16,7 @@ type ManagedRow = {
 };
 
 function localHashForRow(projectRoot: string, row: ManagedRow): string | null {
-  const abs = join(projectRoot, row.path);
+  const abs = safeJoin(projectRoot, row.path);
   if (!existsSync(abs)) return null;
   if (row.is_dir) {
     try {
