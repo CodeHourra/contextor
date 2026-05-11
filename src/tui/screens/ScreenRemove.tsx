@@ -1,16 +1,42 @@
 import { Box, Text, useInput } from 'ink';
+import TextInput from 'ink-text-input';
+import { useMemo, useState } from 'react';
+import { remove } from '../../commands/remove.js';
 import { Footer } from '../components/Footer.js';
 import { useTui } from '../context.js';
+import {
+  ReporterShell,
+  type TuiReporterState,
+  createInitialReporterState,
+  tuiReporter,
+} from '../reporter.js';
 
 export function ScreenRemove() {
-  const { setScreen } = useTui();
-  useInput((_i, k) => {
-    if (k.escape) setScreen('main');
-  });
+  const { db, setScreen } = useTui();
+  const [rs, setRs] = useState<TuiReporterState>(createInitialReporterState);
+  const reporter = useMemo(() => tuiReporter(setRs), []);
+  const [val, setVal] = useState('');
+  const [msg, setMsg] = useState<string | null>(null);
+  useInput((_, k) => k.escape && setScreen('main'));
+
   return (
     <Box flexDirection="column">
-      <Text>Screen Remove (TODO)</Text>
-      <Footer hint="press ESC to back" />
+      <Text bold>remove project (alias)</Text>
+      <ReporterShell state={rs} setState={setRs} />
+      <TextInput
+        value={val}
+        onChange={setVal}
+        onSubmit={async (alias) => {
+          try {
+            const r = await remove(db, alias.trim(), { yes: false }, reporter);
+            setMsg(r.removed ? `Removed ${r.alias}.` : 'Cancelled.');
+          } catch (e) {
+            setMsg(`Error: ${(e as Error).message}`);
+          }
+        }}
+      />
+      {msg && <Text color="cyan">{msg}</Text>}
+      <Footer hint="enter submit · esc" />
     </Box>
   );
 }

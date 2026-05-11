@@ -1,16 +1,32 @@
 import { Box, Text, useInput } from 'ink';
+import { useEffect, useState } from 'react';
+import { ls } from '../../commands/ls.js';
 import { Footer } from '../components/Footer.js';
 import { useTui } from '../context.js';
 
 export function ScreenLs() {
-  const { setScreen } = useTui();
-  useInput((_i, k) => {
-    if (k.escape) setScreen('main');
-  });
+  const { db, currentProject, setScreen } = useTui();
+  const [err, setErr] = useState<string | null>(null);
+  const [rows, setRows] = useState<string[]>([]);
+  useInput((_, k) => k.escape && setScreen('main'));
+
+  useEffect(() => {
+    if (!currentProject) {
+      setErr('Not in a project.');
+      return;
+    }
+    ls(db, currentProject.id)
+      .then((entries) =>
+        setRows(entries.map((e) => `${e.kind === 'exclude' ? '!' : '+'} ${e.path}`)),
+      )
+      .catch((e) => setErr((e as Error).message));
+  }, [db, currentProject]);
+
   return (
     <Box flexDirection="column">
-      <Text>Screen Ls (TODO)</Text>
-      <Footer hint="press ESC to back" />
+      <Text bold>ls (manifest)</Text>
+      {err ? <Text color="red">{err}</Text> : rows.map((l) => <Text key={l}>{l}</Text>)}
+      <Footer hint="esc → main menu" />
     </Box>
   );
 }

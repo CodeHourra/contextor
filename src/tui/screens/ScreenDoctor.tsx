@@ -1,16 +1,46 @@
 import { Box, Text, useInput } from 'ink';
+import { useEffect, useMemo, useState } from 'react';
+import { type DoctorReport, doctor } from '../../commands/doctor.js';
 import { Footer } from '../components/Footer.js';
 import { useTui } from '../context.js';
+import {
+  ReporterShell,
+  type TuiReporterState,
+  createInitialReporterState,
+  tuiReporter,
+} from '../reporter.js';
 
 export function ScreenDoctor() {
-  const { setScreen } = useTui();
-  useInput((_i, k) => {
-    if (k.escape) setScreen('main');
-  });
+  const { db, cwd, setScreen } = useTui();
+  const [rs, setRs] = useState<TuiReporterState>(createInitialReporterState);
+  const reporter = useMemo(() => tuiReporter(setRs), []);
+  const [rep, setRep] = useState<DoctorReport | null>(null);
+  useInput((_, k) => k.escape && setScreen('main'));
+
+  useEffect(() => {
+    doctor(db, cwd, reporter).then(setRep);
+  }, [db, cwd, reporter]);
+
   return (
     <Box flexDirection="column">
-      <Text>Screen Doctor (TODO)</Text>
-      <Footer hint="press ESC to back" />
+      <Text bold>doctor</Text>
+      <ReporterShell state={rs} setState={setRs} />
+      {rep && (
+        <Box flexDirection="column" marginTop={1}>
+          <Text color={rep.ok ? 'green' : 'red'}>{rep.ok ? 'OK' : 'ISSUES'}</Text>
+          {rep.issues.map((s) => (
+            <Text key={s} color="red">
+              {s}
+            </Text>
+          ))}
+          {rep.warnings.map((s) => (
+            <Text key={s} color="yellow">
+              {s}
+            </Text>
+          ))}
+        </Box>
+      )}
+      <Footer hint="esc → main menu" />
     </Box>
   );
 }
