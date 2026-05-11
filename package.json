@@ -29,7 +29,7 @@
     "lint:fix": "biome check --write .",
     "typecheck": "tsc --noEmit",
     "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
-    "prepublishOnly": "pnpm ci"
+    "prepublishOnly": "pnpm run ci"
   },
   "dependencies": {
     "@inquirer/prompts": "^7.0.0",
