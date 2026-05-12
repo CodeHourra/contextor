@@ -1,10 +1,18 @@
 {
-  "name": "contextor",
+  "name": "contextor-cli",
   "version": "0.1.0",
-  "description": "Project-level developer context sync tool (SQLite-backed)",
+  "description": "Project-level developer context sync tool (SQLite-backed). Snapshot and restore .claude/.cursor/.codex/.env*/AGENTS.md/CLAUDE.md and similar dotfiles per project.",
   "license": "MIT",
-  "author": "stevelliu",
-  "keywords": ["dotfiles", "context", "sync", "developer", "cli", "sqlite"],
+  "author": "steve",
+  "keywords": ["dotfiles", "context", "sync", "developer", "cli", "sqlite", "claude", "cursor"],
+  "homepage": "https://github.com/CodeHourra/contextor#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CodeHourra/contextor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/CodeHourra/contextor/issues"
+  },
   "type": "module",
   "files": ["dist", "README.md", "LICENSE"],
   "bin": {
