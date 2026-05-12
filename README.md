@@ -15,12 +15,19 @@
 ## 安装
 
 ```bash
-npx @codehourra/contextor --help
+# 一次性运行（注意带 -y，避免 npx 在非 TTY 终端下回退到 PATH 找 contextor）
+npx -y @codehourra/contextor --help
 pnpm dlx @codehourra/contextor --help
+
+# 全局安装（之后可直接运行 contextor）
 npm install -g @codehourra/contextor
+# 或
+pnpm add -g @codehourra/contextor
+
+contextor --version
 ```
 
-全局安装后可直接运行 `contextor`（bin 名固定为 `contextor`）。
+> bin 名固定为 `contextor`。首次安装会编译 `better-sqlite3` 的 native binding，可能需要 30~60 秒，是正常现象。
 
 ## Quick Start
 
