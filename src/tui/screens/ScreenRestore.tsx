@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { restore } from '../../commands/restore.js';
 import { Footer } from '../components/Footer.js';
 import { useTui } from '../context.js';
+import { ESCAPE_LIKE_HINT, wantsEscapeLike } from '../escapeLike.js';
 import {
   ReporterShell,
   type TuiReporterState,
@@ -11,19 +12,30 @@ import {
 } from '../reporter.js';
 
 export function ScreenRestore() {
-  const { db, cwd, setScreen } = useTui();
+  const { db, cwd, currentProject, setScreen } = useTui();
   const [rs, setRs] = useState<TuiReporterState>(createInitialReporterState);
   const reporter = useMemo(() => tuiReporter(setRs), []);
   const [end, setEnd] = useState<{ ok: boolean; text: string } | null>(null);
 
-  useInput((_i, k) => {
-    if (k.escape) setScreen('main');
+  useInput((input, k) => {
+    if (wantsEscapeLike(k, input)) setScreen('main');
     else if (end && !rs.interaction) setScreen('main');
   });
 
   useEffect(() => {
+    if (!currentProject) return;
     let cancelled = false;
-    restore(db, { cwd, yes: false, noBackup: false, dryRun: false }, reporter)
+    restore(
+      db,
+      {
+        cwd,
+        projectId: currentProject.id,
+        yes: false,
+        noBackup: false,
+        dryRun: false,
+      },
+      reporter,
+    )
       .then((r) => {
         if (cancelled) return;
         setEnd({
@@ -37,7 +49,16 @@ export function ScreenRestore() {
     return () => {
       cancelled = true;
     };
-  }, [db, cwd, reporter]);
+  }, [db, cwd, currentProject, reporter]);
+
+  if (!currentProject) {
+    return (
+      <Box flexDirection="column">
+        <Text color="red">Not in a project. Run init or link this directory before restore.</Text>
+        <Footer hint={`${ESCAPE_LIKE_HINT} → main menu`} />
+      </Box>
+    );
+  }
 
   return (
     <Box flexDirection="column">
@@ -49,10 +70,10 @@ export function ScreenRestore() {
             {end.ok ? '✓ ' : '✗ '}
             {end.text}
           </Text>
-          <Text dimColor>any key · esc → menu</Text>
+          <Text dimColor>any key · {ESCAPE_LIKE_HINT} → menu</Text>
         </Box>
       )}
-      {!end && <Footer hint="esc → main menu" />}
+      {!end && <Footer hint={`${ESCAPE_LIKE_HINT} → main menu`} />}
     </Box>
   );
 }

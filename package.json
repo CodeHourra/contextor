@@ -1,6 +1,6 @@
 {
   "name": "@codehourra/contextor",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Project-level developer context sync tool (SQLite-backed). Snapshot and restore .claude/.cursor/.codex/.env*/AGENTS.md/CLAUDE.md and similar dotfiles per project.",
   "license": "MIT",
   "author": "steve",

@@ -15,6 +15,8 @@ import type { ProjectRow, Reporter } from './types.js';
 
 export type RestoreOptions = {
   cwd: string;
+  /** TUI / 调用方显式指定项目时优先于 cwd 解析（避免 lookup 失败） */
+  projectId?: number;
   alias?: string;
   yes: boolean;
   noBackup: boolean;
@@ -40,6 +42,13 @@ type ManagedRow = {
 };
 
 function resolveProject(db: Db, opts: RestoreOptions): ProjectRow {
+  if (opts.projectId != null) {
+    const row = db.prepare('SELECT * FROM projects WHERE id = ?').get(opts.projectId) as
+      | ProjectRow
+      | undefined;
+    if (!row) throw new Error(`Project id ${opts.projectId} not found.`);
+    return row;
+  }
   if (opts.alias) {
     const row = db.prepare('SELECT * FROM projects WHERE alias = ?').get(opts.alias) as
       | ProjectRow

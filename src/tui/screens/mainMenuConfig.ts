@@ -1,6 +1,14 @@
 import type { ScreenName } from '../types.js';
 
-export const PROJECT_BOUND = new Set<ScreenName>(['save', 'add', 'rm', 'ls', 'status', 'diff']);
+export const PROJECT_BOUND = new Set<ScreenName>([
+  'save',
+  'restore',
+  'add',
+  'rm',
+  'ls',
+  'status',
+  'diff',
+]);
 
 export const ALL_ITEMS = [
   { label: 'init       初始化当前目录', value: 'init' as const },

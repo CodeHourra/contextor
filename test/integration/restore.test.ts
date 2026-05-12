@@ -171,6 +171,40 @@ describe('restore (integration)', () => {
     db.close();
   });
 
+  it('restore with projectId from repo subdir uses git root as projectRoot', async () => {
+    gitInit(proj);
+    mkdirSync(join(proj, 'deep', 'nested'), { recursive: true });
+    const db = openDb(dbPath);
+    const { project } = await init(
+      db,
+      { cwd: proj, alias: 'restore-subid', noScan: true, yes: true },
+      mockReporter(),
+    );
+    const ts = Date.now();
+    db.prepare(
+      `INSERT INTO manifest_entries (project_id, path, kind, created_at) VALUES (?, ?, 'include', ?)`,
+    ).run(project.id, '.env', ts);
+    await save(db, { cwd: proj, allowLarge: false, dryRun: false }, mockReporter());
+
+    rmSync(join(proj, '.env'), { force: true });
+
+    const nested = join(proj, 'deep', 'nested');
+    const r = await restore(
+      db,
+      {
+        cwd: nested,
+        projectId: project.id,
+        yes: true,
+        noBackup: true,
+        dryRun: false,
+      },
+      mockReporter(),
+    );
+    expect(r.restored).toBe(1);
+    expect(readFileSync(join(proj, '.env'), 'utf8')).toBe('A=1');
+    db.close();
+  });
+
   it('rejects DB path ../evil.txt: throws escape error; does not write outside project', async () => {
     gitInit(proj);
     const db = openDb(dbPath);

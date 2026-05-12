@@ -3,12 +3,13 @@ import { useEffect, useState } from 'react';
 import { type ProjectSummary, projects } from '../../commands/projects.js';
 import { Footer } from '../components/Footer.js';
 import { useTui } from '../context.js';
+import { ESCAPE_LIKE_HINT, wantsEscapeLike } from '../escapeLike.js';
 
 export function ScreenProjects() {
   const { db, setScreen } = useTui();
   const [rows, setRows] = useState<ProjectSummary[]>([]);
   const [err, setErr] = useState<string | null>(null);
-  useInput((_, k) => k.escape && setScreen('main'));
+  useInput((input, k) => wantsEscapeLike(k, input) && setScreen('main'));
 
   useEffect(() => {
     projects(db)
@@ -25,7 +26,7 @@ export function ScreenProjects() {
           {p.alias} · files={p.fileCount} · {p.remote_url ?? 'no remote'}
         </Text>
       ))}
-      <Footer hint="esc → main menu" />
+      <Footer hint={`${ESCAPE_LIKE_HINT} → main menu`} />
     </Box>
   );
 }

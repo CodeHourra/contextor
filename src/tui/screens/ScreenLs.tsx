@@ -3,12 +3,13 @@ import { useEffect, useState } from 'react';
 import { ls } from '../../commands/ls.js';
 import { Footer } from '../components/Footer.js';
 import { useTui } from '../context.js';
+import { ESCAPE_LIKE_HINT, wantsEscapeLike } from '../escapeLike.js';
 
 export function ScreenLs() {
   const { db, currentProject, setScreen } = useTui();
   const [err, setErr] = useState<string | null>(null);
   const [rows, setRows] = useState<string[]>([]);
-  useInput((_, k) => k.escape && setScreen('main'));
+  useInput((input, k) => wantsEscapeLike(k, input) && setScreen('main'));
 
   useEffect(() => {
     if (!currentProject) {
@@ -26,7 +27,7 @@ export function ScreenLs() {
     <Box flexDirection="column">
       <Text bold>ls (manifest)</Text>
       {err ? <Text color="red">{err}</Text> : rows.map((l) => <Text key={l}>{l}</Text>)}
-      <Footer hint="esc → main menu" />
+      <Footer hint={`${ESCAPE_LIKE_HINT} → main menu`} />
     </Box>
   );
 }

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { remove } from '../../commands/remove.js';
 import { Footer } from '../components/Footer.js';
 import { useTui } from '../context.js';
+import { ESCAPE_LIKE_HINT, wantsEscapeLike } from '../escapeLike.js';
 import {
   ReporterShell,
   type TuiReporterState,
@@ -17,7 +18,7 @@ export function ScreenRemove() {
   const reporter = useMemo(() => tuiReporter(setRs), []);
   const [val, setVal] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
-  useInput((_, k) => k.escape && setScreen('main'));
+  useInput((input, k) => wantsEscapeLike(k, input) && setScreen('main'));
 
   return (
     <Box flexDirection="column">
@@ -36,7 +37,7 @@ export function ScreenRemove() {
         }}
       />
       {msg && <Text color="cyan">{msg}</Text>}
-      <Footer hint="enter submit · esc" />
+      <Footer hint={`enter submit · ${ESCAPE_LIKE_HINT}`} />
     </Box>
   );
 }

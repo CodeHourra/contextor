@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { type DoctorReport, doctor } from '../../commands/doctor.js';
 import { Footer } from '../components/Footer.js';
 import { useTui } from '../context.js';
+import { ESCAPE_LIKE_HINT, wantsEscapeLike } from '../escapeLike.js';
 import {
   ReporterShell,
   type TuiReporterState,
@@ -15,7 +16,7 @@ export function ScreenDoctor() {
   const [rs, setRs] = useState<TuiReporterState>(createInitialReporterState);
   const reporter = useMemo(() => tuiReporter(setRs), []);
   const [rep, setRep] = useState<DoctorReport | null>(null);
-  useInput((_, k) => k.escape && setScreen('main'));
+  useInput((input, k) => wantsEscapeLike(k, input) && setScreen('main'));
 
   useEffect(() => {
     doctor(db, cwd, reporter).then(setRep);
@@ -40,7 +41,7 @@ export function ScreenDoctor() {
           ))}
         </Box>
       )}
-      <Footer hint="esc → main menu" />
+      <Footer hint={`${ESCAPE_LIKE_HINT} → main menu`} />
     </Box>
   );
 }

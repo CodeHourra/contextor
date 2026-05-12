@@ -4,11 +4,12 @@ import { type TrashListEntry, listTrash } from '../../commands/trash.js';
 import { TRASH_DIR } from '../../utils/home.js';
 import { Footer } from '../components/Footer.js';
 import { useTui } from '../context.js';
+import { ESCAPE_LIKE_HINT, wantsEscapeLike } from '../escapeLike.js';
 
 export function ScreenTrash() {
   const { setScreen } = useTui();
   const [rows, setRows] = useState<TrashListEntry[]>([]);
-  useInput((_, k) => k.escape && setScreen('main'));
+  useInput((input, k) => wantsEscapeLike(k, input) && setScreen('main'));
 
   useEffect(() => {
     setRows(listTrash(TRASH_DIR));
@@ -26,7 +27,7 @@ export function ScreenTrash() {
           </Text>
         ))
       )}
-      <Footer hint="esc → main menu" />
+      <Footer hint={`${ESCAPE_LIKE_HINT} → main menu`} />
     </Box>
   );
 }

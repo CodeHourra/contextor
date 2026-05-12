@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { diff } from '../../commands/diff.js';
 import { Footer } from '../components/Footer.js';
 import { useTui } from '../context.js';
+import { ESCAPE_LIKE_HINT, wantsEscapeLike } from '../escapeLike.js';
 
 export function ScreenDiff() {
   const { db, cwd, currentProject, setScreen } = useTui();
@@ -12,8 +13,8 @@ export function ScreenDiff() {
   const [patch, setPatch] = useState('');
   const [err, setErr] = useState<string | null>(null);
 
-  useInput((_, k) => {
-    if (k.escape) {
+  useInput((input, k) => {
+    if (wantsEscapeLike(k, input)) {
       if (pick) {
         setPick(null);
         setPatch('');
@@ -36,7 +37,7 @@ export function ScreenDiff() {
     return (
       <Box flexDirection="column">
         <Text color="red">Not in a project.</Text>
-        <Footer hint="esc → main menu" />
+        <Footer hint={`${ESCAPE_LIKE_HINT} → main menu`} />
       </Box>
     );
   }
@@ -49,7 +50,7 @@ export function ScreenDiff() {
         {lines.map((l, lineNo) => (
           <Text key={`${pick}:${String(lineNo)}:${l}`}>{l}</Text>
         ))}
-        <Footer hint="esc → file list" />
+        <Footer hint={`${ESCAPE_LIKE_HINT} → file list`} />
       </Box>
     );
   }
@@ -72,7 +73,7 @@ export function ScreenDiff() {
           }}
         />
       )}
-      <Footer hint="esc → main menu" />
+      <Footer hint={`${ESCAPE_LIKE_HINT} → main menu`} />
     </Box>
   );
 }

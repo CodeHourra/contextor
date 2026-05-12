@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { save } from '../../commands/save.js';
 import { Footer } from '../components/Footer.js';
 import { useTui } from '../context.js';
+import { ESCAPE_LIKE_HINT, wantsEscapeLike } from '../escapeLike.js';
 import {
   ReporterShell,
   type TuiReporterState,
@@ -16,8 +17,8 @@ export function ScreenSave() {
   const reporter = useMemo(() => tuiReporter(setRs), []);
   const [end, setEnd] = useState<{ ok: boolean; text: string } | null>(null);
 
-  useInput((_i, k) => {
-    if (k.escape) setScreen('main');
+  useInput((input, k) => {
+    if (wantsEscapeLike(k, input)) setScreen('main');
     else if (end && !rs.interaction) setScreen('main');
   });
 
@@ -50,10 +51,10 @@ export function ScreenSave() {
             {end.ok ? '✓ ' : '✗ '}
             {end.text}
           </Text>
-          <Text dimColor>any key · esc → menu</Text>
+          <Text dimColor>any key · {ESCAPE_LIKE_HINT} → menu</Text>
         </Box>
       )}
-      {!end && <Footer hint="esc → main menu" />}
+      {!end && <Footer hint={`${ESCAPE_LIKE_HINT} → main menu`} />}
     </Box>
   );
 }

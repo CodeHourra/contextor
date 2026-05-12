@@ -3,11 +3,12 @@ import { useEffect, useState } from 'react';
 import { type Rule, listRules } from '../../commands/rules.js';
 import { Footer } from '../components/Footer.js';
 import { useTui } from '../context.js';
+import { ESCAPE_LIKE_HINT, wantsEscapeLike } from '../escapeLike.js';
 
 export function ScreenRules() {
   const { db, setScreen } = useTui();
   const [rules, setRules] = useState<Rule[]>([]);
-  useInput((_, k) => k.escape && setScreen('main'));
+  useInput((input, k) => wantsEscapeLike(k, input) && setScreen('main'));
 
   useEffect(() => {
     setRules(listRules(db));
@@ -21,7 +22,7 @@ export function ScreenRules() {
           {r.isDefault ? '*' : '·'} {r.pattern}
         </Text>
       ))}
-      <Footer hint="esc → main menu" />
+      <Footer hint={`${ESCAPE_LIKE_HINT} → main menu`} />
     </Box>
   );
 }
