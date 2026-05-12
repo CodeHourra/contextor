@@ -9,7 +9,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { init } from '../../src/commands/init.js';
 import { restore } from '../../src/commands/restore.js';
@@ -21,6 +21,12 @@ function gitInit(cwd: string): void {
   execSync('git init', { cwd, stdio: 'ignore' });
   execSync('git config user.email "ctx-test@example.com"', { cwd, stdio: 'ignore' });
   execSync('git config user.name "ctx-test"', { cwd, stdio: 'ignore' });
+}
+
+const DUAL_CLONE_REMOTE = 'https://github.com/ctx-test/dual-clone.git';
+
+function gitRemoteOrigin(cwd: string, url: string): void {
+  execSync(`git remote add origin ${url}`, { cwd, stdio: 'ignore' });
 }
 
 describe('restore (integration)', () => {
@@ -268,6 +274,51 @@ describe('restore (integration)', () => {
       ),
     ).rejects.toThrow('cancelled by user');
     expect(readFileSync(join(proj, '.env'), 'utf8')).toBe('Nope');
+    db.close();
+  });
+
+  it('same git remote, second clone: restore writes into cwd clone (not stale root_path_hint)', async () => {
+    gitInit(proj);
+    gitRemoteOrigin(proj, DUAL_CLONE_REMOTE);
+    const db = openDb(dbPath);
+    const { project } = await init(
+      db,
+      { cwd: proj, alias: 'dual-clone', noScan: true, yes: true },
+      mockReporter(),
+    );
+    const ts = Date.now();
+    db.prepare(
+      `INSERT INTO manifest_entries (project_id, path, kind, created_at) VALUES (?, ?, 'include', ?)`,
+    ).run(project.id, '.env', ts);
+    await save(db, { cwd: proj, allowLarge: false, dryRun: false }, mockReporter());
+
+    const projB = mkdtempSync(join(tmpdir(), 'ctx-restore-proj-b-'));
+    try {
+      gitInit(projB);
+      gitRemoteOrigin(projB, DUAL_CLONE_REMOTE);
+      expect(existsSync(join(projB, '.env'))).toBe(false);
+
+      const rowBefore = db
+        .prepare('SELECT root_path_hint FROM projects WHERE id = ?')
+        .get(project.id) as { root_path_hint: string | null };
+      expect(resolve(rowBefore.root_path_hint ?? '')).toBe(resolve(proj));
+
+      const r = await restore(
+        db,
+        { cwd: projB, yes: true, noBackup: true, dryRun: false },
+        mockReporter(),
+      );
+      expect(r.restored).toBe(1);
+      expect(r.created).toEqual(['.env']);
+      expect(readFileSync(join(projB, '.env'), 'utf8')).toBe('A=1');
+
+      const rowAfter = db
+        .prepare('SELECT root_path_hint FROM projects WHERE id = ?')
+        .get(project.id) as { root_path_hint: string | null };
+      expect(resolve(rowAfter.root_path_hint ?? '')).toBe(resolve(projB));
+    } finally {
+      rmSync(projB, { recursive: true, force: true });
+    }
     db.close();
   });
 });

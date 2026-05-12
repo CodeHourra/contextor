@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { createPatch } from 'diff';
 import { getBlob, hashBuffer } from '../core/blob.js';
 import { safeJoin } from '../core/paths.js';
-import { detectProjectRoot } from '../core/project.js';
+import { resolveProjectDiskRoot } from '../core/project.js';
 import type { Db } from '../db/index.js';
 import type { ProjectRow } from './types.js';
 
@@ -21,8 +21,7 @@ export function diff(db: Db, projectId: number, cwd: string, rel: string): strin
     | undefined;
   if (!project) throw new Error(`Project id ${projectId} not found.`);
 
-  const { root } = detectProjectRoot(cwd);
-  const projectRoot = resolve(project.root_path_hint ?? root);
+  const projectRoot = resolveProjectDiskRoot(project, cwd);
 
   const row = db
     .prepare('SELECT blob_hash FROM managed_files WHERE project_id = ? AND path = ?')

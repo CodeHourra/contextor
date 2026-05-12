@@ -77,7 +77,10 @@ export function ScreenLs() {
     <ManifestEntryTreeBrowse
       entries={entries}
       title="ls (manifest)"
-      subtitles={[`Project: ${currentProject.alias}`]}
+      subtitles={[
+        `Project: ${currentProject.alias}`,
+        '[+] include · [!] exclude · [±] both · [·] implicit folder (no own row)',
+      ]}
       onBack={() => setScreen('main')}
       backTarget="main menu"
     />

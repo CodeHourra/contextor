@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { gcOrphanBlobs, hashBuffer, putBlob } from '../core/blob.js';
 import { expandManifest, listManifest } from '../core/manifest.js';
-import { detectProjectRoot } from '../core/project.js';
+import { detectProjectRoot, resolveProjectDiskRoot } from '../core/project.js';
 import type { Db } from '../db/index.js';
 import { nowMs } from '../utils/time.js';
 import type { ProjectRow, Reporter } from './types.js';
@@ -60,8 +60,7 @@ export async function save(db: Db, opts: SaveOptions, reporter: Reporter): Promi
     throw new Error('Not in a known project. Run `contextor init` first.');
   }
 
-  const { root } = detectProjectRoot(opts.cwd);
-  const projectRoot = resolve(project.root_path_hint ?? root);
+  const projectRoot = resolveProjectDiskRoot(project, opts.cwd);
   const manifest = listManifest(db, project.id);
   const expanded = expandManifest(projectRoot, manifest);
   const fullExpandedRel = new Set(expanded.map((e) => e.rel));

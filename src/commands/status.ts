@@ -4,7 +4,7 @@ import { hashBuffer } from '../core/blob.js';
 import { type Classification, classifyConflicts } from '../core/conflict.js';
 import { expandManifest, listManifest } from '../core/manifest.js';
 import { safeJoin } from '../core/paths.js';
-import { detectProjectRoot } from '../core/project.js';
+import { resolveProjectDiskRoot } from '../core/project.js';
 import type { Db } from '../db/index.js';
 import type { ProjectRow } from './types.js';
 
@@ -67,8 +67,7 @@ export function status(db: Db, projectId: number, cwd: string): Classification {
     | undefined;
   if (!project) throw new Error(`Project id ${projectId} not found.`);
 
-  const { root } = detectProjectRoot(cwd);
-  const projectRoot = resolve(project.root_path_hint ?? root);
+  const projectRoot = resolveProjectDiskRoot(project, cwd);
 
   const allRows = db
     .prepare('SELECT path, blob_hash, mode, is_dir FROM managed_files WHERE project_id = ?')

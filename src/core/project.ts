@@ -51,3 +51,21 @@ export function detectProjectRoot(cwd: string): { root: string; remote: string |
   }
   return { root: resolve(cwd), remote: null };
 }
+
+/**
+ * 解析「落盘」用的项目根目录。
+ *
+ * - 已绑定 **remote** 的项目：同一远端可在多个目录 clone，DB 里的 `root_path_hint` 可能仍是旧路径；
+ *   此时必须以 **当前 cwd 解析出的 git 根** 为准，否则 save/restore/status/diff 会读写错目录。
+ * - **无 remote** 的项目：依赖路径识别，沿用 `root_path_hint`（无则 cwd 根）。
+ */
+export function resolveProjectDiskRoot(
+  project: { remote_url: string | null; root_path_hint: string | null },
+  cwd: string,
+): string {
+  const { root } = detectProjectRoot(cwd);
+  if (project.remote_url) {
+    return resolve(root);
+  }
+  return resolve(project.root_path_hint ?? root);
+}

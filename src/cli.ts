@@ -21,7 +21,7 @@ import { status as statusFn } from './commands/status.js';
 import { cleanTrash, listTrash, restoreFromTrash, showTrash } from './commands/trash.js';
 import type { ProjectRow } from './commands/types.js';
 import { expandManifest, listManifest } from './core/manifest.js';
-import { detectProjectRoot } from './core/project.js';
+import { detectProjectRoot, resolveProjectDiskRoot } from './core/project.js';
 import { openDb } from './db/index.js';
 import type { Db } from './db/index.js';
 import { DB_PATH, TRASH_DIR } from './utils/home.js';
@@ -205,8 +205,7 @@ program
       const cwd = cwdFrom(cmd);
       const project = requireProject(db, cwd);
       if (opts.all) {
-        const { root } = detectProjectRoot(cwd);
-        const projectRoot = resolve(project.root_path_hint ?? root);
+        const projectRoot = resolveProjectDiskRoot(project, cwd);
         const manifest = listManifest(db, project.id);
         const expanded = expandManifest(projectRoot, manifest);
         for (const e of expanded) {
@@ -387,8 +386,7 @@ trash
       const db = openCliDb(cmd);
       const cwd = cwdFrom(cmd);
       const project = requireProject(db, cwd);
-      const { root } = detectProjectRoot(cwd);
-      const projectRoot = resolve(project.root_path_hint ?? root);
+      const projectRoot = resolveProjectDiskRoot(project, cwd);
       const { restored } = await restoreFromTrash(
         TRASH_DIR,
         id,
