@@ -1,6 +1,6 @@
 {
   "name": "contextor-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Project-level developer context sync tool (SQLite-backed). Snapshot and restore .claude/.cursor/.codex/.env*/AGENTS.md/CLAUDE.md and similar dotfiles per project.",
   "license": "MIT",
   "author": "steve",
@@ -33,7 +33,8 @@
     "lint:fix": "biome check --write .",
     "typecheck": "tsc --noEmit",
     "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
-    "prepublishOnly": "pnpm run ci"
+    "prepublishOnly": "pnpm run ci",
+    "publish": "pnpm publish --registry=https://registry.npmjs.org/ --access public --no-git-checks"
   },
   "dependencies": {
     "@inquirer/prompts": "^7.0.0",

@@ -26,7 +26,7 @@ import { openDb } from './db/index.js';
 import type { Db } from './db/index.js';
 import { DB_PATH, TRASH_DIR } from './utils/home.js';
 
-const VERSION = '0.1.0';
+const VERSION = '0.1.1';
 
 const reporter = cliReporter();
 
