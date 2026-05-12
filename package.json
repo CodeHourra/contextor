@@ -1,0 +1,63 @@
+{
+  "name": "contextor-cli",
+  "version": "0.1.0",
+  "description": "Project-level developer context sync tool (SQLite-backed). Snapshot and restore .claude/.cursor/.codex/.env*/AGENTS.md/CLAUDE.md and similar dotfiles per project.",
+  "license": "MIT",
+  "author": "steve",
+  "keywords": ["dotfiles", "context", "sync", "developer", "cli", "sqlite", "claude", "cursor"],
+  "homepage": "https://github.com/CodeHourra/contextor#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CodeHourra/contextor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/CodeHourra/contextor/issues"
+  },
+  "type": "module",
+  "files": ["dist", "README.md", "LICENSE"],
+  "bin": {
+    "contextor": "./dist/cli.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@biomejs/biome", "better-sqlite3", "esbuild"]
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "typecheck": "tsc --noEmit",
+    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "prepublishOnly": "pnpm run ci"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^7.0.0",
+    "better-sqlite3": "^11.3.0",
+    "commander": "^12.1.0",
+    "diff": "^7.0.0",
+    "ink": "^5.0.1",
+    "ink-select-input": "^6.0.0",
+    "ink-text-input": "^6.0.0",
+    "picocolors": "^1.1.0",
+    "picomatch": "^4.0.2",
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/diff": "^6.0.0",
+    "@types/node": "^22.0.0",
+    "@types/picomatch": "^3.0.1",
+    "@types/react": "^18.3.0",
+    "ink-testing-library": "^4.0.0",
+    "tsup": "^8.3.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

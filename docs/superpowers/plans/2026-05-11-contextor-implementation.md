@@ -171,9 +171,15 @@ strict-peer-dependencies=false
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@biomejs/biome", "better-sqlite3", "esbuild"]
   }
 }
 ```
+
+> 说明：pnpm 9+ 默认收紧 lifecycle scripts，`better-sqlite3`（原生 prebuild-install）/ `esbuild` / `@biomejs/biome` 必须在 allowlist 中显式放行，否则原生模块不可加载，Task 1.1 起会失败。
+> 单行数组写法是为了通过 biome 默认格式化（Task 0.2 起强制）。
 
 - [ ] **Step 4：安装依赖**
 
@@ -297,10 +303,13 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 5：lint 与 typecheck 通过**
+- [ ] **Step 5：lint 通过；typecheck 接受 TS18003**
 
-Run: `pnpm lint && pnpm typecheck`
-Expected: 0 errors（此时无 src 文件，typecheck 应直接通过）。
+Run: `pnpm lint`
+Expected: 0 errors。
+
+Run: `pnpm typecheck`
+Expected: **此时**会报 `error TS18003: No inputs were found...`，因为 `tsconfig.include` 指向尚未存在的 `src/**` 与 `test/**`。这是预期行为；下一个 Task 0.3 创建 `src/cli.ts` 等首批源文件后，typecheck 会自然通过。本 task 不要为了"绿色"创建占位文件。
 
 - [ ] **Step 6：commit**
 
