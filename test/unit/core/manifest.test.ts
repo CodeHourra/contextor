@@ -2,7 +2,11 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { expandManifest } from '../../../src/core/manifest.js';
+import {
+  type ManifestEntry,
+  expandManifest,
+  manifestEntryMatchesRelPath,
+} from '../../../src/core/manifest.js';
 
 describe('expandManifest', () => {
   let tmp: string;
@@ -43,5 +47,29 @@ describe('expandManifest', () => {
   it('exact file', () => {
     const r = expandManifest(tmp, [{ path: 'AGENTS.md', kind: 'include' }]);
     expect(r.map((e) => e.rel)).toEqual(['AGENTS.md']);
+  });
+});
+
+describe('manifestEntryMatchesRelPath', () => {
+  it('include directory pattern covers children', () => {
+    const inc: ManifestEntry = { path: '.cursor/', kind: 'include' };
+    expect(manifestEntryMatchesRelPath('.cursor', true, inc)).toBe(true);
+    expect(manifestEntryMatchesRelPath('.cursor/rules.md', false, inc)).toBe(true);
+    expect(manifestEntryMatchesRelPath('.env', false, inc)).toBe(false);
+  });
+
+  it('exclude prefix', () => {
+    const exc: ManifestEntry = {
+      path: '.cursor/cache/',
+      kind: 'exclude',
+    };
+    expect(manifestEntryMatchesRelPath('.cursor/cache/big.bin', false, exc)).toBe(true);
+    expect(manifestEntryMatchesRelPath('.cursor/rules.md', false, exc)).toBe(false);
+  });
+
+  it('include glob matches file only', () => {
+    const inc: ManifestEntry = { path: '.env*', kind: 'include' };
+    expect(manifestEntryMatchesRelPath('.env', false, inc)).toBe(true);
+    expect(manifestEntryMatchesRelPath('.cursor', true, inc)).toBe(false);
   });
 });

@@ -4,10 +4,12 @@ import TextInput from 'ink-text-input';
 import { useEffect, useMemo, useState } from 'react';
 import { add } from '../../commands/add.js';
 import { rm } from '../../commands/rm.js';
+import { listManifest } from '../../core/manifest.js';
 import { detectProjectRoot } from '../../core/project.js';
 import { Footer } from '../components/Footer.js';
 import { useTui } from '../context.js';
 import { ESCAPE_LIKE_HINT, wantsEscapeLike } from '../escapeLike.js';
+import { buildExpandedManifestRelSet, manifestBrowseRowOverlay } from '../manifestBrowseOverlay.js';
 import { type FlatNode, flattenTree } from '../treeBrowse.js';
 
 type Phase = 'home' | 'browse' | 'manual' | 'review' | 'done';
@@ -42,6 +44,24 @@ export function ManifestPathPicker({ mode }: { mode: ManifestPathPickerMode }) {
     () => (phase === 'browse' ? flattenTree(projectRoot, expanded) : []),
     [phase, projectRoot, expanded],
   );
+
+  const manifestEntries = useMemo(
+    () => (phase === 'browse' && currentProject ? listManifest(db, currentProject.id) : []),
+    [db, currentProject, phase],
+  );
+
+  const expandedManifestRels = useMemo(
+    () => buildExpandedManifestRelSet(projectRoot, manifestEntries),
+    [projectRoot, manifestEntries],
+  );
+
+  const rowOverlay = useMemo(() => {
+    const m = new Map<string, { include: boolean; exclude: boolean }>();
+    for (const n of nodes) {
+      m.set(n.rel, manifestBrowseRowOverlay(n, manifestEntries, expandedManifestRels));
+    }
+    return m;
+  }, [nodes, manifestEntries, expandedManifestRels]);
 
   useEffect(() => {
     if (phase !== 'browse') return;
@@ -101,6 +121,37 @@ export function ManifestPathPicker({ mode }: { mode: ManifestPathPickerMode }) {
       }
       if (input === ' ') {
         toggleSelect(cur);
+        return;
+      }
+      if (input === 'i' || input === 'I') {
+        setSelected((s) => {
+          const next = new Set(s);
+          for (const n of nodes) {
+            const k = manifestKey(n);
+            if (next.has(k)) next.delete(k);
+            else next.add(k);
+          }
+          return next;
+        });
+        setMsg(null);
+        return;
+      }
+      if (input === 'a' || input === 'A') {
+        setSelected((s) => {
+          const next = new Set(s);
+          for (const n of nodes) next.add(manifestKey(n));
+          return next;
+        });
+        setMsg(null);
+        return;
+      }
+      if (input === 'z' || input === 'Z') {
+        setSelected((s) => {
+          const next = new Set(s);
+          for (const n of nodes) next.delete(manifestKey(n));
+          return next;
+        });
+        setMsg(null);
         return;
       }
       if (input === 'c') {
@@ -268,6 +319,10 @@ export function ManifestPathPicker({ mode }: { mode: ManifestPathPickerMode }) {
       <Text dimColor>
         {projectRoot} · {selectedCount} selected · {cursor + 1}/{nodes.length}
       </Text>
+      <Text dimColor>
+        [x]/[ ] = this action selection · # = in manifest (include) · ! = exclude rule · · = not in
+        manifest
+      </Text>
       <Box flexDirection="column" marginTop={1}>
         {window.map((n, i) => {
           const idx = start + i;
@@ -276,11 +331,24 @@ export function ManifestPathPicker({ mode }: { mode: ManifestPathPickerMode }) {
           const chevron = n.isDir ? (expanded.has(n.rel) ? '▾' : '▸') : ' ';
           const checked = selected.has(manifestKey(n));
           const mark = checked ? '[x]' : '[ ]';
+          const o = rowOverlay.get(n.rel) ?? { include: false, exclude: false };
+          let manTag = ' ·';
+          if (o.exclude && o.include) manTag = '!#';
+          else if (o.exclude) manTag = ' !';
+          else if (o.include) manTag = ' #';
           const tail = n.isDir ? '/' : '';
-          const line = `${focused ? '› ' : '  '}${indent}${chevron} ${mark} ${n.name}${tail}`;
-          const color = focused ? 'cyan' : checked ? 'green' : undefined;
+          const line = `${focused ? '› ' : '  '}${indent}${chevron} ${mark}${manTag} ${n.name}${tail}`;
+          let color: string | undefined;
+          if (focused) color = 'cyan';
+          else if (o.exclude) color = 'red';
+          else if (o.include || checked) color = 'green';
           return (
-            <Text key={n.rel} bold={focused} color={color} dimColor={!focused && n.isDir}>
+            <Text
+              key={n.rel}
+              bold={focused}
+              color={color}
+              dimColor={!focused && n.isDir && !o.exclude && !o.include}
+            >
               {line}
             </Text>
           );
@@ -289,7 +357,9 @@ export function ManifestPathPicker({ mode }: { mode: ManifestPathPickerMode }) {
       {msg && <Text color="yellow">{msg}</Text>}
       <Box marginTop={1} flexDirection="column">
         <Text dimColor>↑↓ move · → expand · ← collapse/parent · enter open/toggle</Text>
-        <Text dimColor>space toggle select · c continue · {ESCAPE_LIKE_HINT} back</Text>
+        <Text dimColor>
+          {`space toggle · i invert listed · a all listed · z clear listed · c continue · ${ESCAPE_LIKE_HINT} back`}
+        </Text>
       </Box>
     </Box>
   );

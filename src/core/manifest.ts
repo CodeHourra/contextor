@@ -21,6 +21,36 @@ function patternToMatcher(pattern: string): (rel: string) => boolean {
   return (rel) => match(rel);
 }
 
+/**
+ * 判断单条 manifest 规则是否在「路径规则」层面命中 rel（不读磁盘）。
+ * glob 的 include 对「目录节点本身」返回 false（由 expand 结果补全子路径）。
+ */
+export function manifestEntryMatchesRelPath(
+  rel: string,
+  isDir: boolean,
+  entry: ManifestEntry,
+): boolean {
+  const raw = entry.path.replace(/\\/g, '/').replace(/^\.\/+/, '');
+  if (!raw) return false;
+  if (entry.kind === 'exclude') {
+    return patternToMatcher(raw)(rel);
+  }
+  const isDirPattern = raw.endsWith('/');
+  const cleaned = raw.replace(/\/+$/, '');
+  if (isDirPattern) {
+    return rel === cleaned || rel.startsWith(`${cleaned}/`);
+  }
+  if (/[*?[\]]/.test(cleaned)) {
+    if (isDir) return false;
+    try {
+      return picomatch(cleaned, { dot: true })(rel);
+    } catch {
+      return false;
+    }
+  }
+  return rel === cleaned;
+}
+
 export type ExpandedFile = { rel: string; abs: string; isDir: boolean; mode: number; size: number };
 
 export function expandManifest(root: string, entries: ManifestEntry[]): ExpandedFile[] {
