@@ -1,12 +1,12 @@
 # contextor
 
 [![CI](https://github.com/CodeHourra/contextor/actions/workflows/ci.yml/badge.svg)](https://github.com/CodeHourra/contextor/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/contextor-cli.svg)](https://www.npmjs.com/package/contextor-cli)
-[![license](https://img.shields.io/npm/l/contextor-cli.svg)](./LICENSE)
+[![npm version](https://img.shields.io/npm/v/@codehourra/contextor.svg)](https://www.npmjs.com/package/@codehourra/contextor)
+[![license](https://img.shields.io/npm/l/@codehourra/contextor.svg)](./LICENSE)
 
 项目级开发上下文（`.claude/`、`.cursor/`、`.codebuddy/`、`.codex/`、`.gemini/`、`.vscode/`、`.env*`、`AGENTS.md`、`CLAUDE.md` 等）的本地 SQLite 同步与还原 CLI。
 
-> npm 包名：`contextor-cli`（`contextor` 已被另一个无关包占用）；安装后可执行命令是 `contextor`。
+> npm 包名：`@codehourra/contextor`（registry 里一律小写；`contextor` 无 scope 名已被无关包占用，`contextor-cli` 为他人 tombstone 包）。安装后可执行命令仍是 `contextor`。
 
 ## 为什么需要它
 
@@ -15,9 +15,9 @@
 ## 安装
 
 ```bash
-npx contextor-cli --help
-pnpm dlx contextor-cli --help
-npm install -g contextor-cli
+npx @codehourra/contextor --help
+pnpm dlx @codehourra/contextor --help
+npm install -g @codehourra/contextor
 ```
 
 全局安装后可直接运行 `contextor`（bin 名固定为 `contextor`）。
